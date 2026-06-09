@@ -381,6 +381,55 @@
   .list-card-precio { font-weight: 700; font-size: 1rem; color: #2E7D32; margin: 2px 0; }
   .list-card-meta { font-size: 0.72rem; color: var(--gris-texto); line-height: 1.6; }
 
+  /* ── PANTALLA: BÚSQUEDA ── */
+  .search-box {
+    background: #fff;
+    margin: 12px;
+    border-radius: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--gris-borde);
+    box-shadow: var(--sombra);
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .search-box input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 0.88rem;
+    font-family: 'Inter', sans-serif;
+    color: var(--negro);
+  }
+  .search-box input::placeholder { color: #bbb; }
+  .search-clear {
+    background: transparent;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    color: #aaa;
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+  .search-clear:hover { color: #555; }
+  .search-info {
+    padding: 0 14px 6px;
+    font-size: 0.78rem;
+    color: var(--gris-texto);
+    min-height: 20px;
+  }
+  .busqueda-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 50px 20px;
+    color: #aaa;
+    font-size: 0.88rem;
+    text-align: center;
+  }
+  .busqueda-empty span:first-child { font-size: 2.8rem; }
+
   /* ── PANTALLA: PRODUCTOS ── */
   .add-box {
     background: #fff;
@@ -718,6 +767,23 @@
         </div>
       </div>
 
+      <!-- ── PANTALLA BÚSQUEDA ── -->
+      <div class="screen screen-content" id="screen-busqueda">
+        <div class="search-box">
+          <span>🔍</span>
+          <input type="text" id="inputBusqueda" placeholder="Buscar producto, sitio, contacto..."
+                 oninput="buscarRegistros(this.value)" />
+          <button class="search-clear" onclick="limpiarBusqueda()" title="Limpiar">✕</button>
+        </div>
+        <div class="search-info" id="searchInfo"></div>
+        <div id="busquedaResultados">
+          <div class="busqueda-empty">
+            <span>🔍</span>
+            <span>Escribe para buscar por producto, sitio o contacto</span>
+          </div>
+        </div>
+      </div>
+
       <!-- ── PANTALLA PRODUCTOS ── -->
       <div class="screen screen-content" id="screen-productos">
         <div class="add-box">
@@ -764,6 +830,10 @@
       <button class="tab-btn" id="tab-listados" onclick="cambiarTab('listados', '📊 Listados')">
         <span class="icon">📊</span>
         <span>Listados</span>
+      </button>
+      <button class="tab-btn" id="tab-busqueda" onclick="cambiarTab('busqueda', '🔍 Búsqueda')">
+        <span class="icon">🔍</span>
+        <span>Buscar</span>
       </button>
       <button class="tab-btn" id="tab-productos" onclick="cambiarTab('productos', '🏷️ Productos')">
         <span class="icon">🏷️</span>
@@ -820,7 +890,72 @@
 </div>
 
 <script>
-  const fotos = ['🥤','🥛','🍚','🫒','🥚','🍗'];
+  // Datos de ejemplo para búsqueda
+  const registrosEjemplo = [
+    {emoji:'🥛', item:'Leche', precio:'0,89', sitio:'Lidl Triana', contacto:'', fecha:'12/06/25', lat:'37.3841'},
+    {emoji:'🍚', item:'Arroz', precio:'1,15', sitio:'Carrefour SF', contacto:'954 123 456', fecha:'10/06/25', lat:'37.3912'},
+    {emoji:'🫒', item:'Aceite de oliva', precio:'4,50', sitio:'Mercadona Nervión', contacto:'', fecha:'09/06/25', lat:'37.3890'},
+    {emoji:'🥤', item:'Refresco Cola', precio:'1,55', sitio:'Alcampo Este', contacto:'', fecha:'08/06/25', lat:'37.4012'},
+    {emoji:'🍉', item:'Sandía', precio:'2,30', sitio:'Mercadona Nervión', contacto:'', fecha:'07/06/25', lat:'37.3890'},
+    {emoji:'🍑', item:'Melocotón', precio:'3,20', sitio:'Lidl Triana', contacto:'', fecha:'06/06/25', lat:'37.3841'},
+    {emoji:'🍈', item:'Melón', precio:'1,80', sitio:'Carrefour SF', contacto:'', fecha:'05/06/25', lat:'37.3912'},
+    {emoji:'🍗', item:'Pollo (kg)', precio:'3,90', sitio:'Mercadona Nervión', contacto:'', fecha:'04/06/25', lat:'37.3890'},
+    {emoji:'🥚', item:'Huevos (docena)', precio:'2,10', sitio:'Lidl Triana', contacto:'', fecha:'03/06/25', lat:'37.3841'},
+    {emoji:'🫙', item:'Yogur', precio:'0,65', sitio:'Alcampo Este', contacto:'', fecha:'02/06/25', lat:'37.4012'},
+    {emoji:'🥛', item:'Leche', precio:'0,95', sitio:'Mercadona Nervión', contacto:'', fecha:'01/06/25', lat:'37.3890'},
+    {emoji:'🍈', item:'Melón', precio:'2,10', sitio:'Alcampo Este', contacto:'', fecha:'31/05/25', lat:'37.4012'},
+  ];
+
+  function buscarRegistros(termino) {
+    const t = termino.trim().toLowerCase();
+    const info = document.getElementById('searchInfo');
+    const lista = document.getElementById('busquedaResultados');
+
+    if (!t) {
+      info.textContent = '';
+      lista.innerHTML = `<div class="busqueda-empty"><span>🔍</span><span>Escribe para buscar por producto, sitio o contacto</span></div>`;
+      return;
+    }
+
+    const encontrados = registrosEjemplo.filter(r =>
+      r.item.toLowerCase().includes(t) ||
+      r.sitio.toLowerCase().includes(t) ||
+      r.contacto.toLowerCase().includes(t)
+    );
+
+    info.textContent = encontrados.length === 0 ? 'Sin resultados' :
+      encontrados.length === 1 ? '1 resultado' : `${encontrados.length} resultados`;
+
+    if (encontrados.length === 0) {
+      lista.innerHTML = `<div class="busqueda-empty"><span>😕</span><span>Sin resultados para "<strong>${termino}</strong>"</span></div>`;
+      return;
+    }
+
+    lista.innerHTML = encontrados.map(r => `
+      <div class="card" style="margin:0 10px 8px;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.10)">
+        <div class="card-img">${r.emoji}</div>
+        <div class="card-top">
+          <span class="card-item">${r.item}</span>
+          <span class="card-precio">${r.precio} €</span>
+        </div>
+        <div class="card-bottom">
+          <div class="card-meta">${r.sitio}${r.contacto ? '<br>' + r.contacto : ''}<br>📍 ${r.lat} · ${r.fecha}</div>
+          <div class="card-actions">
+            <button class="card-btn">✏️</button>
+            <button class="card-btn">🗑️</button>
+          </div>
+        </div>
+      </div>`).join('');
+  }
+
+  function limpiarBusqueda() {
+    const input = document.getElementById('inputBusqueda');
+    input.value = '';
+    buscarRegistros('');
+    input.focus();
+  }
+
+
   let fotoTomada = false;
   let registroCount = 4;
   let tabActual = 'foto';
