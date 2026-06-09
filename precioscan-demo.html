@@ -1,0 +1,977 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrecioScan — Demo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --verde: #1B5E20;
+    --verde-mid: #2E7D32;
+    --verde-light: #E8F5E9;
+    --amarillo: #FFC107;
+    --gris-bg: #F4F6F8;
+    --gris-borde: #E0E0E0;
+    --gris-texto: #757575;
+    --negro: #1A1A1A;
+    --blanco: #FFFFFF;
+    --rojo: #C62828;
+    --sombra: 0 2px 12px rgba(0,0,0,0.10);
+    --radio: 14px;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #0D1F12;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 32px 16px 60px;
+  }
+
+  /* ── CABECERA ── */
+  .hero {
+    text-align: center;
+    margin-bottom: 36px;
+    color: #fff;
+  }
+  .hero-logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .hero-logo svg { width: 48px; height: 48px; }
+  .hero-logo h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+  .hero p {
+    font-size: 1rem;
+    color: #A5D6A7;
+    max-width: 420px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+  .badge {
+    display: inline-block;
+    background: #FFC107;
+    color: #1B5E20;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-bottom: 12px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  /* ── MARCO MÓVIL ── */
+  .phone-wrap {
+    position: relative;
+    width: 375px;
+    max-width: 100%;
+  }
+  .phone-frame {
+    background: #111;
+    border-radius: 44px;
+    padding: 14px 12px;
+    box-shadow: 0 0 0 2px #333, 0 24px 60px rgba(0,0,0,0.5), inset 0 0 0 1px #444;
+  }
+  .phone-notch {
+    width: 110px;
+    height: 26px;
+    background: #111;
+    border-radius: 0 0 18px 18px;
+    margin: 0 auto 8px;
+    position: relative;
+    z-index: 10;
+  }
+  .phone-screen {
+    background: var(--gris-bg);
+    border-radius: 30px;
+    overflow: hidden;
+    height: 680px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ── STATUS BAR ── */
+  .status-bar {
+    background: var(--verde);
+    color: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 18px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--verde);
+    color: #fff;
+    padding: 10px 16px 14px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ── CONTENIDO ── */
+  .screen-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: none;
+  }
+  .screen-content::-webkit-scrollbar { display: none; }
+
+  /* ── TAB BAR ── */
+  .tabbar {
+    background: #fff;
+    border-top: 1px solid var(--gris-borde);
+    display: flex;
+    flex-shrink: 0;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.06);
+  }
+  .tab-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    padding: 8px 4px 10px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-size: 0.62rem;
+    color: #9E9E9E;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+  }
+  .tab-btn .icon { font-size: 1.3rem; }
+  .tab-btn.active { color: var(--verde); }
+  .tab-btn.active .tab-indicator {
+    width: 20px; height: 3px;
+    background: var(--verde);
+    border-radius: 2px;
+    margin-top: 2px;
+  }
+
+  /* ── PANTALLA: FOTO ── */
+  .screen { display: none; padding: 0; }
+  .screen.active { display: block; }
+
+  .gps-bar {
+    background: var(--verde-light);
+    border-left: 4px solid var(--verde);
+    margin: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    color: var(--verde);
+    font-weight: 500;
+  }
+
+  .foto-preview {
+    margin: 0 12px 12px;
+    border-radius: 12px;
+    overflow: hidden;
+    height: 160px;
+    background: #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  .foto-preview img {
+    width: 100%; height: 100%; object-fit: cover;
+  }
+  .foto-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: #aaa;
+    font-size: 0.8rem;
+  }
+  .foto-placeholder .cam-icon { font-size: 2.5rem; }
+
+  .btn-foto {
+    margin: 0 12px 4px;
+    background: var(--verde);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    width: calc(100% - 24px);
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .btn-foto:hover { background: var(--verde-mid); }
+  .btn-foto.tomada { background: #455A64; }
+
+  .divider { height: 1px; background: var(--gris-borde); margin: 10px 12px; }
+
+  .campo { margin: 0 12px 10px; }
+  .campo label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #555;
+    margin-bottom: 4px;
+  }
+  .campo input, .campo select {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1.5px solid var(--gris-borde);
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-family: 'Inter', sans-serif;
+    background: #fff;
+    color: var(--negro);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  .campo input:focus, .campo select:focus { border-color: var(--verde); }
+
+  .btn-guardar {
+    margin: 4px 12px 16px;
+    background: #2E7D32;
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    width: calc(100% - 24px);
+    padding: 13px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: background 0.15s;
+  }
+  .btn-guardar:hover { background: var(--verde); }
+
+  /* ── PANTALLA: REGISTROS ── */
+  .registros-header {
+    padding: 10px 14px 6px;
+    font-size: 0.78rem;
+    color: var(--gris-texto);
+  }
+
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    margin: 0 10px 8px;
+    border: 1px solid var(--gris-borde);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    grid-template-rows: auto auto;
+    box-shadow: var(--sombra);
+  }
+  .card-img {
+    grid-row: 1 / 3;
+    width: 100px;
+    height: 100px;
+    object-fit: cover;
+    background: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+  }
+  .card-img img { width: 100%; height: 100%; object-fit: cover; }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 10px 4px;
+  }
+  .card-item { font-weight: 700; font-size: 0.9rem; color: var(--negro); }
+  .card-precio { font-weight: 700; font-size: 0.95rem; color: #2E7D32; }
+  .card-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 6px 8px 10px;
+  }
+  .card-meta { font-size: 0.72rem; color: var(--gris-texto); line-height: 1.5; }
+  .card-actions { display: flex; gap: 2px; }
+  .card-btn {
+    background: transparent;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: background 0.1s;
+  }
+  .card-btn:hover { background: #f0f0f0; }
+
+  /* ── PANTALLA: LISTADOS ── */
+  .filtros {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 12px;
+  }
+  .filtro-btn {
+    padding: 11px 8px;
+    border: none;
+    border-radius: 10px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    background: #B0BEC5;
+    color: #fff;
+    transition: all 0.15s;
+  }
+  .filtro-btn.active { background: var(--verde); }
+  .filtro-btn:hover { opacity: 0.9; }
+
+  .resultados-header {
+    padding: 0 14px 8px;
+    font-size: 0.78rem;
+    color: var(--gris-texto);
+  }
+
+  .list-card {
+    background: #fff;
+    border-radius: 12px;
+    margin: 0 10px 8px;
+    border: 1px solid var(--gris-borde);
+    overflow: hidden;
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    box-shadow: var(--sombra);
+  }
+  .list-card-img {
+    width: 90px; height: 90px;
+    object-fit: cover;
+    background: #eee;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.8rem;
+  }
+  .list-card-img img { width: 100%; height: 100%; object-fit: cover; }
+  .list-card-body { padding: 10px 12px; }
+  .list-card-item { font-weight: 700; font-size: 0.9rem; color: var(--negro); }
+  .list-card-precio { font-weight: 700; font-size: 1rem; color: #2E7D32; margin: 2px 0; }
+  .list-card-meta { font-size: 0.72rem; color: var(--gris-texto); line-height: 1.6; }
+
+  /* ── PANTALLA: PRODUCTOS ── */
+  .add-box {
+    background: #fff;
+    margin: 12px;
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid var(--gris-borde);
+    box-shadow: var(--sombra);
+  }
+  .add-box h3 { font-size: 0.85rem; font-weight: 700; margin-bottom: 8px; color: var(--negro); }
+  .add-row { display: flex; gap: 8px; }
+  .add-row input {
+    flex: 1;
+    padding: 9px 12px;
+    border: 1.5px solid var(--gris-borde);
+    border-radius: 9px;
+    font-size: 0.85rem;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+  }
+  .add-row input:focus { border-color: var(--verde); }
+  .add-row button {
+    background: var(--verde);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    width: 40px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .add-row button:hover { background: var(--verde-mid); }
+
+  .item-list { padding: 0 12px 16px; }
+  .item-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    background: #fff;
+    border-radius: 9px;
+    margin-bottom: 5px;
+    border: 1px solid var(--gris-borde);
+    font-size: 0.88rem;
+    color: var(--negro);
+    gap: 10px;
+  }
+  .item-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--verde);
+    flex-shrink: 0;
+  }
+
+  /* ── TOAST ── */
+  .toast {
+    position: absolute;
+    bottom: 70px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #323232;
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    transition: all 0.3s;
+    pointer-events: none;
+    z-index: 100;
+  }
+  .toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  /* ── INFO LATERAL ── */
+  .info-panel {
+    margin-top: 32px;
+    width: 375px;
+    max-width: 100%;
+    color: #fff;
+  }
+  .info-panel h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin-bottom: 14px;
+    color: #A5D6A7;
+  }
+  .feature {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+  .feature-icon {
+    font-size: 1.4rem;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .feature-text strong {
+    display: block;
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .feature-text span {
+    font-size: 0.8rem;
+    color: #A5D6A7;
+    line-height: 1.5;
+  }
+  .tech-stack {
+    margin-top: 20px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .tech-tag {
+    background: rgba(255,255,255,0.1);
+    color: #E8F5E9;
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+</style>
+</head>
+<body>
+
+<!-- CABECERA -->
+<div class="hero">
+  <div class="badge">Portfolio Demo</div>
+  <div class="hero-logo">
+    <svg viewBox="0 0 680 680" xmlns="http://www.w3.org/2000/svg">
+      <rect width="680" height="680" rx="140" fill="#1B5E20"/>
+      <rect x="130" y="240" width="420" height="300" rx="40" fill="#FFFFFF"/>
+      <rect x="240" y="195" width="140" height="65" rx="20" fill="#FFFFFF"/>
+      <circle cx="340" cy="390" r="110" fill="#1B5E20"/>
+      <circle cx="340" cy="390" r="85" fill="#145214"/>
+      <circle cx="340" cy="390" r="60" fill="#E8F5E9"/>
+      <circle cx="315" cy="365" r="18" fill="#FFFFFF" opacity="0.6"/>
+      <rect x="160" y="268" width="44" height="30" rx="8" fill="#FFC107"/>
+      <rect x="390" y="180" width="160" height="80" rx="12" fill="#FFC107"/>
+      <circle cx="408" cy="220" r="10" fill="#1B5E20"/>
+      <line x1="408" y1="210" x2="408" y2="180" stroke="#1B5E20" stroke-width="5" stroke-linecap="round"/>
+      <text x="468" y="231" font-family="Arial" font-size="42" font-weight="700" fill="#1B5E20" text-anchor="middle">€</text>
+    </svg>
+    <h1>PrecioScan</h1>
+  </div>
+  <p>Compara precios de supermercado fotografiando productos. Encuentra lo más barato cerca de ti.</p>
+</div>
+
+<!-- MÓVIL -->
+<div class="phone-wrap">
+  <div class="phone-frame">
+    <div class="phone-notch"></div>
+    <div class="phone-screen" id="phoneScreen">
+
+      <div class="status-bar">
+        <span>9:41</span>
+        <span>📶 🔋</span>
+      </div>
+
+      <div class="topbar" id="topbarTitle">
+        📷 Nueva Foto
+      </div>
+
+      <!-- ── PANTALLA FOTO ── -->
+      <div class="screen active screen-content" id="screen-foto">
+
+        <div class="gps-bar">📍 37.38920, -5.99240 — GPS obtenido</div>
+
+        <div class="foto-preview" id="fotoPreview">
+          <div class="foto-placeholder" id="fotoPlaceholder">
+            <span class="cam-icon">📷</span>
+            <span>Pulsa el botón para hacer foto</span>
+          </div>
+          <img id="fotoImg" src="" style="display:none" alt="foto producto"/>
+        </div>
+
+        <button class="btn-foto" id="btnFoto" onclick="hacerFoto()">
+          📷 &nbsp;Hacer Foto
+        </button>
+
+        <div class="divider"></div>
+
+        <div class="campo">
+          <label>Producto</label>
+          <select id="selectItem">
+            <option value="">Selecciona un producto...</option>
+            <option>Aceite de oliva</option>
+            <option>Leche</option>
+            <option>Arroz</option>
+            <option selected>Refresco Cola</option>
+            <option>Huevos (docena)</option>
+            <option>Yogur</option>
+            <option>Pollo (kg)</option>
+            <option>Sandía</option>
+          </select>
+        </div>
+
+        <div class="campo">
+          <label>Precio (€)</label>
+          <input type="number" id="inputPrecio" placeholder="0,00" value="1.35"/>
+        </div>
+
+        <div class="campo">
+          <label>Sitio (opcional)</label>
+          <input type="text" id="inputSitio" placeholder="Ej: Mercadona Nervión" value="Mercadona Nervión"/>
+        </div>
+
+        <div class="campo">
+          <label>Contacto (opcional)</label>
+          <input type="text" placeholder="Ej: Tel. tienda, web..."/>
+        </div>
+
+        <div class="campo">
+          <label>Observaciones (opcional)</label>
+          <input type="text" placeholder="Notas adicionales..."/>
+        </div>
+
+        <button class="btn-guardar" onclick="guardarRegistro()">💾 &nbsp;Guardar Registro</button>
+      </div>
+
+      <!-- ── PANTALLA REGISTROS ── -->
+      <div class="screen screen-content" id="screen-registros">
+        <div class="registros-header" id="registrosCount">4 registros guardados</div>
+
+        <div id="listaRegistros">
+          <div class="card">
+            <div class="card-img">🥛</div>
+            <div class="card-top">
+              <span class="card-item">Leche</span>
+              <span class="card-precio">0,89 €</span>
+            </div>
+            <div class="card-bottom">
+              <div class="card-meta">Lidl Triana<br>📍 37.3841 · 12/06/25</div>
+              <div class="card-actions">
+                <button class="card-btn" title="Editar">✏️</button>
+                <button class="card-btn" title="Borrar" onclick="borrarCard(this)">🗑️</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-img">🍚</div>
+            <div class="card-top">
+              <span class="card-item">Arroz</span>
+              <span class="card-precio">1,15 €</span>
+            </div>
+            <div class="card-bottom">
+              <div class="card-meta">Carrefour SF<br>📍 37.3912 · 10/06/25</div>
+              <div class="card-actions">
+                <button class="card-btn">✏️</button>
+                <button class="card-btn" onclick="borrarCard(this)">🗑️</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-img">🫒</div>
+            <div class="card-top">
+              <span class="card-item">Aceite de oliva</span>
+              <span class="card-precio">4,50 €</span>
+            </div>
+            <div class="card-bottom">
+              <div class="card-meta">Mercadona Nervión<br>📍 37.3890 · 09/06/25</div>
+              <div class="card-actions">
+                <button class="card-btn">✏️</button>
+                <button class="card-btn" onclick="borrarCard(this)">🗑️</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-img">🥤</div>
+            <div class="card-top">
+              <span class="card-item">Refresco Cola</span>
+              <span class="card-precio">1,55 €</span>
+            </div>
+            <div class="card-bottom">
+              <div class="card-meta">Alcampo Este<br>📍 37.4012 · 08/06/25</div>
+              <div class="card-actions">
+                <button class="card-btn">✏️</button>
+                <button class="card-btn" onclick="borrarCard(this)">🗑️</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PANTALLA LISTADOS ── -->
+      <div class="screen screen-content" id="screen-listados">
+        <div class="filtros">
+          <button class="filtro-btn active" id="btnPrecio" onclick="filtrar('precio')">💰 Más Baratos</button>
+          <button class="filtro-btn" id="btnCercania" onclick="filtrar('cercania')">📍 Más Cercanos</button>
+        </div>
+        <div class="resultados-header" id="resultadosHeader">4 productos encontrados · filtro: precio</div>
+
+        <div id="listaResultados">
+          <div class="list-card">
+            <div class="list-card-img">🥛</div>
+            <div class="list-card-body">
+              <div class="list-card-item">Leche</div>
+              <div class="list-card-precio">💰 0,89 €</div>
+              <div class="list-card-meta">Lidl Triana · 📍 0,3 km · 🗓 12/06/25</div>
+            </div>
+          </div>
+          <div class="list-card">
+            <div class="list-card-img">🍚</div>
+            <div class="list-card-body">
+              <div class="list-card-item">Arroz</div>
+              <div class="list-card-precio">💰 1,15 €</div>
+              <div class="list-card-meta">Carrefour SF · 📍 0,8 km · 🗓 10/06/25</div>
+            </div>
+          </div>
+          <div class="list-card">
+            <div class="list-card-img">🥤</div>
+            <div class="list-card-body">
+              <div class="list-card-item">Refresco Cola</div>
+              <div class="list-card-precio">💰 1,35 €</div>
+              <div class="list-card-meta">Mercadona Nervión · 📍 0,5 km · 🗓 09/06/25</div>
+            </div>
+          </div>
+          <div class="list-card">
+            <div class="list-card-img">🫒</div>
+            <div class="list-card-body">
+              <div class="list-card-item">Aceite de oliva</div>
+              <div class="list-card-precio">💰 4,50 €</div>
+              <div class="list-card-meta">Mercadona Nervión · 📍 0,5 km · 🗓 09/06/25</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── PANTALLA PRODUCTOS ── -->
+      <div class="screen screen-content" id="screen-productos">
+        <div class="add-box">
+          <h3>Añadir producto</h3>
+          <div class="add-row">
+            <input type="text" id="inputNuevoItem" placeholder="Nombre del producto..."/>
+            <button onclick="agregarItem()">➕</button>
+          </div>
+        </div>
+
+        <div class="item-list" id="itemList">
+          <div class="item-row"><div class="item-dot"></div>Aceite de oliva</div>
+          <div class="item-row"><div class="item-dot"></div>Agua mineral</div>
+          <div class="item-row"><div class="item-dot"></div>Arroz</div>
+          <div class="item-row"><div class="item-dot"></div>Azúcar</div>
+          <div class="item-row"><div class="item-dot"></div>Café</div>
+          <div class="item-row"><div class="item-dot"></div>Cereza</div>
+          <div class="item-row"><div class="item-dot"></div>Huevos (docena)</div>
+          <div class="item-row"><div class="item-dot"></div>Leche</div>
+          <div class="item-row"><div class="item-dot"></div>Melón</div>
+          <div class="item-row"><div class="item-dot"></div>Pollo (kg)</div>
+          <div class="item-row"><div class="item-dot"></div>Refresco Cola</div>
+          <div class="item-row"><div class="item-dot"></div>Sandía</div>
+          <div class="item-row"><div class="item-dot"></div>Yogur</div>
+        </div>
+      </div>
+
+      <!-- Toast -->
+      <div class="toast" id="toast"></div>
+
+    </div><!-- phone-screen -->
+
+    <!-- TAB BAR -->
+    <div class="tabbar">
+      <button class="tab-btn active" id="tab-foto" onclick="cambiarTab('foto', '📷 Nueva Foto')">
+        <span class="icon">📷</span>
+        <span>Foto</span>
+        <div class="tab-indicator"></div>
+      </button>
+      <button class="tab-btn" id="tab-registros" onclick="cambiarTab('registros', '📋 Registros')">
+        <span class="icon">📋</span>
+        <span>Registros</span>
+      </button>
+      <button class="tab-btn" id="tab-listados" onclick="cambiarTab('listados', '📊 Listados')">
+        <span class="icon">📊</span>
+        <span>Listados</span>
+      </button>
+      <button class="tab-btn" id="tab-productos" onclick="cambiarTab('productos', '🏷️ Productos')">
+        <span class="icon">🏷️</span>
+        <span>Productos</span>
+      </button>
+    </div>
+
+  </div><!-- phone-frame -->
+</div><!-- phone-wrap -->
+
+<!-- INFO PANEL -->
+<div class="info-panel">
+  <h2>¿Qué hace PrecioScan?</h2>
+
+  <div class="feature">
+    <div class="feature-icon">📷</div>
+    <div class="feature-text">
+      <strong>Fotografía y registra</strong>
+      <span>Haz una foto al producto, el GPS y la fecha se guardan automáticamente. Añade precio, sitio y notas.</span>
+    </div>
+  </div>
+  <div class="feature">
+    <div class="feature-icon">💰</div>
+    <div class="feature-text">
+      <strong>Compara precios</strong>
+      <span>Filtra por el precio más barato de cada producto entre todos los supermercados registrados.</span>
+    </div>
+  </div>
+  <div class="feature">
+    <div class="feature-icon">📍</div>
+    <div class="feature-text">
+      <strong>Encuentra lo más cercano</strong>
+      <span>Ordena por proximidad GPS para saber qué tienda con el mejor precio tienes más cerca ahora mismo.</span>
+    </div>
+  </div>
+  <div class="feature">
+    <div class="feature-icon">🗄️</div>
+    <div class="feature-text">
+      <strong>Base de datos local</strong>
+      <span>Todo se guarda en el móvil sin necesidad de cuenta ni conexión. Hasta 500 registros y fotos.</span>
+    </div>
+  </div>
+
+  <div class="tech-stack">
+    <span class="tech-tag">.NET MAUI 10</span>
+    <span class="tech-tag">C#</span>
+    <span class="tech-tag">SQLite</span>
+    <span class="tech-tag">Android 11+</span>
+    <span class="tech-tag">iOS compatible</span>
+    <span class="tech-tag">GPS / MediaPicker</span>
+    <span class="tech-tag">MVVM</span>
+    <span class="tech-tag">CommunityToolkit</span>
+  </div>
+</div>
+
+<script>
+  const fotos = ['🥤','🥛','🍚','🫒','🥚','🍗'];
+  let fotoTomada = false;
+  let registroCount = 4;
+  let tabActual = 'foto';
+
+  function cambiarTab(tab, titulo) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('active');
+      const ind = b.querySelector('.tab-indicator');
+      if (ind) ind.remove();
+    });
+    document.getElementById('screen-' + tab).classList.add('active');
+    const btn = document.getElementById('tab-' + tab);
+    btn.classList.add('active');
+    const ind = document.createElement('div');
+    ind.className = 'tab-indicator';
+    btn.appendChild(ind);
+    document.getElementById('topbarTitle').textContent = titulo;
+    tabActual = tab;
+  }
+
+  function hacerFoto() {
+    const btn = document.getElementById('btnFoto');
+    const placeholder = document.getElementById('fotoPlaceholder');
+    const img = document.getElementById('fotoImg');
+    if (!fotoTomada) {
+      btn.textContent = '✅  Foto tomada — vuelve a hacer otra';
+      btn.classList.add('tomada');
+      placeholder.style.display = 'none';
+      img.src = 'https://placehold.co/351x160/E8F5E9/1B5E20?text=📷+Foto+guardada';
+      img.style.display = 'block';
+      fotoTomada = true;
+      mostrarToast('📍 GPS registrado · Foto guardada');
+    } else {
+      btn.textContent = '📷  Hacer Foto';
+      btn.classList.remove('tomada');
+      placeholder.style.display = 'flex';
+      img.style.display = 'none';
+      fotoTomada = false;
+    }
+  }
+
+  function guardarRegistro() {
+    if (!fotoTomada) {
+      mostrarToast('⚠️ Primero haz una foto');
+      return;
+    }
+    const item = document.getElementById('selectItem').value || 'Producto';
+    const precio = document.getElementById('inputPrecio').value || '0.00';
+    const sitio = document.getElementById('inputSitio').value || 'Sin sitio';
+    registroCount++;
+    document.getElementById('registrosCount').textContent = registroCount + ' registros guardados';
+
+    const emojis = {'Leche':'🥛','Arroz':'🍚','Aceite de oliva':'🫒','Refresco Cola':'🥤','Huevos (docena)':'🥚','Yogur':'🫙','Pollo (kg)':'🍗','Sandía':'🍉'};
+    const emoji = emojis[item] || '📦';
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    const hoy = new Date();
+    const fecha = `${String(hoy.getDate()).padStart(2,'0')}/${String(hoy.getMonth()+1).padStart(2,'0')}/${String(hoy.getFullYear()).slice(2)}`;
+    card.innerHTML = `
+      <div class="card-img">${emoji}</div>
+      <div class="card-top">
+        <span class="card-item">${item}</span>
+        <span class="card-precio">${parseFloat(precio).toFixed(2)} €</span>
+      </div>
+      <div class="card-bottom">
+        <div class="card-meta">${sitio}<br>📍 37.3892 · ${fecha}</div>
+        <div class="card-actions">
+          <button class="card-btn">✏️</button>
+          <button class="card-btn" onclick="borrarCard(this)">🗑️</button>
+        </div>
+      </div>`;
+    document.getElementById('listaRegistros').prepend(card);
+    mostrarToast('✅ Registro guardado correctamente');
+
+    // Reset
+    document.getElementById('btnFoto').textContent = '📷  Hacer Foto';
+    document.getElementById('btnFoto').classList.remove('tomada');
+    document.getElementById('fotoPlaceholder').style.display = 'flex';
+    document.getElementById('fotoImg').style.display = 'none';
+    fotoTomada = false;
+  }
+
+  function borrarCard(btn) {
+    const card = btn.closest('.card');
+    card.style.transition = 'opacity 0.3s, transform 0.3s';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(30px)';
+    setTimeout(() => {
+      card.remove();
+      registroCount = Math.max(0, registroCount - 1);
+      document.getElementById('registrosCount').textContent = registroCount + ' registros guardados';
+    }, 300);
+    mostrarToast('🗑️ Registro eliminado');
+  }
+
+  function filtrar(tipo) {
+    document.getElementById('btnPrecio').classList.toggle('active', tipo === 'precio');
+    document.getElementById('btnCercania').classList.toggle('active', tipo === 'cercania');
+
+    const datos = tipo === 'precio' ? [
+      {emoji:'🥛', item:'Leche', precio:'0,89 €', meta:'Lidl Triana · 📍 0,3 km · 🗓 12/06/25'},
+      {emoji:'🍚', item:'Arroz', precio:'1,15 €', meta:'Carrefour SF · 📍 0,8 km · 🗓 10/06/25'},
+      {emoji:'🥤', item:'Refresco Cola', precio:'1,35 €', meta:'Mercadona Nervión · 📍 0,5 km · 🗓 09/06/25'},
+      {emoji:'🫒', item:'Aceite de oliva', precio:'4,50 €', meta:'Mercadona Nervión · 📍 0,5 km · 🗓 09/06/25'},
+    ] : [
+      {emoji:'🥛', item:'Leche', precio:'0,89 €', meta:'Lidl Triana · 📍 0,3 km · 🗓 12/06/25'},
+      {emoji:'🥤', item:'Refresco Cola', precio:'1,35 €', meta:'Mercadona Nervión · 📍 0,5 km · 🗓 09/06/25'},
+      {emoji:'🫒', item:'Aceite de oliva', precio:'4,50 €', meta:'Mercadona Nervión · 📍 0,5 km · 🗓 09/06/25'},
+      {emoji:'🍚', item:'Arroz', precio:'1,25 €', meta:'Carrefour SF · 📍 0,8 km · 🗓 10/06/25'},
+    ];
+
+    const label = tipo === 'precio' ? 'precio' : 'cercanía';
+    document.getElementById('resultadosHeader').textContent = `${datos.length} productos encontrados · filtro: ${label}`;
+    const lista = document.getElementById('listaResultados');
+    lista.innerHTML = datos.map(d => `
+      <div class="list-card">
+        <div class="list-card-img">${d.emoji}</div>
+        <div class="list-card-body">
+          <div class="list-card-item">${d.item}</div>
+          <div class="list-card-precio">💰 ${d.precio}</div>
+          <div class="list-card-meta">${d.meta}</div>
+        </div>
+      </div>`).join('');
+    mostrarToast(tipo === 'precio' ? '💰 Ordenado por precio' : '📍 Ordenado por cercanía');
+  }
+
+  function agregarItem() {
+    const input = document.getElementById('inputNuevoItem');
+    const val = input.value.trim();
+    if (!val) return;
+    const lista = document.getElementById('itemList');
+    const row = document.createElement('div');
+    row.className = 'item-row';
+    row.innerHTML = `<div class="item-dot"></div>${val}`;
+    lista.appendChild(row);
+    input.value = '';
+    mostrarToast(`✅ "${val}" añadido`);
+  }
+
+  function mostrarToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2200);
+  }
+
+  document.getElementById('inputNuevoItem').addEventListener('keydown', e => {
+    if (e.key === 'Enter') agregarItem();
+  });
+</script>
+</body>
+</html>
