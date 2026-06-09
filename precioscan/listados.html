@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrecioScan — Listados</title>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<div id="topbar"></div>
+<div id="nav"></div>
+
+<div class="page-content">
+
+  <div class="filtros-row">
+    <button class="filtro-btn" id="btnPrecio" onclick="filtrar('precio')">💰 Más Baratos</button>
+    <button class="filtro-btn" id="btnCercania" onclick="filtrar('cercania')">📍 Más Cercanos</button>
+  </div>
+
+  <div class="info-box amarillo" id="gpsInfo" style="display:none">
+    <span class="info-box-icon">📍</span>
+    <span id="gpsInfoTexto">Obteniendo tu posición GPS actual...</span>
+  </div>
+
+  <div class="list-header">
+    <span id="countLabel">Selecciona un filtro para ver resultados</span>
+  </div>
+
+  <div id="listaResultados">
+    <div class="empty-state">
+      <span class="empty-icon">📊</span>
+      <p>Pulsa <strong>Más Baratos</strong> o <strong>Más Cercanos</strong><br>para filtrar los registros</p>
+    </div>
+  </div>
+
+</div>
+
+<script src="shared.js"></script>
+<script>
+  document.getElementById('topbar').innerHTML = renderTopbar('📊 Listados');
+  document.getElementById('nav').innerHTML = renderNav('listados');
+
+  // GPS simulado
+  const MI_LAT = 37.3900 + (Math.random() - 0.5) * 0.005;
+  const MI_LON = -5.9930 + (Math.random() - 0.5) * 0.005;
+
+  function filtrar(tipo) {
+    document.getElementById('btnPrecio').classList.toggle('active', tipo === 'precio');
+    document.getElementById('btnCercania').classList.toggle('active', tipo === 'cercania');
+
+    if (tipo === 'cercania') {
+      document.getElementById('gpsInfo').style.display = 'flex';
+      document.getElementById('gpsInfoTexto').textContent = 'Obteniendo tu posición GPS actual...';
+      setTimeout(() => {
+        document.getElementById('gpsInfoTexto').textContent =
+          `Tu posición: ${MI_LAT.toFixed(5)}, ${MI_LON.toFixed(5)}`;
+        calcularYMostrar(tipo);
+      }, 900);
+    } else {
+      document.getElementById('gpsInfo').style.display = 'none';
+      calcularYMostrar(tipo);
+    }
+  }
+
+  function calcularYMostrar(tipo) {
+    const todos = getRegistros();
+
+    // Agrupar por item, quedarse con el mejor según filtro
+    const grupos = {};
+    todos.forEach(r => {
+      if (!r.item) return;
+      if (!grupos[r.item]) { grupos[r.item] = []; }
+      grupos[r.item].push(r);
+    });
+
+    let resultado = [];
+    Object.values(grupos).forEach(g => {
+      if (tipo === 'precio') {
+        resultado.push(g.reduce((a, b) => a.precio <= b.precio ? a : b));
+      } else {
+        resultado.push(g.reduce((a, b) =>
+          distanciaKm(MI_LAT, MI_LON, a.lat, a.lon) <=
+          distanciaKm(MI_LAT, MI_LON, b.lat, b.lon) ? a : b
+        ));
+      }
+    });
+
+    // Ordenar
+    if (tipo === 'precio') resultado.sort((a, b) => a.precio - b.precio);
+    else resultado.sort((a, b) =>
+      distanciaKm(MI_LAT, MI_LON, a.lat, a.lon) -
+      distanciaKm(MI_LAT, MI_LON, b.lat, b.lon)
+    );
+
+    document.getElementById('countLabel').textContent =
+      `${resultado.length} producto${resultado.length !== 1 ? 's' : ''} · filtro: ${tipo === 'precio' ? 'precio más barato' : 'más cercano'}`;
+
+    if (!resultado.length) {
+      document.getElementById('listaResultados').innerHTML =
+        `<div class="empty-state"><span class="empty-icon">😕</span><p>Sin registros todavía</p></div>`;
+      return;
+    }
+
+    document.getElementById('listaResultados').innerHTML = resultado.map(r => {
+      const dist = distanciaKm(MI_LAT, MI_LON, r.lat, r.lon);
+      const distStr = dist < 1 ? `${(dist*1000).toFixed(0)} m` : `${dist.toFixed(1)} km`;
+      return `<div class="reg-card">
+        <div class="reg-card-img">${r.emoji}</div>
+        <div class="reg-card-top">
+          <span class="reg-card-item">${r.item}</span>
+          <span class="reg-card-precio">${r.precio.toFixed(2)} €</span>
+        </div>
+        <div class="reg-card-bottom">
+          <div class="reg-card-meta">
+            ${r.sitio}<br>
+            📍 ${distStr} · 🗓 ${formatFecha(r.fecha)}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+
+    toast(tipo === 'precio' ? '💰 Ordenado por precio' : '📍 Ordenado por cercanía');
+  }
+</script>
+</body>
+</html>

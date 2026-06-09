@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrecioScan — Búsqueda</title>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<div id="topbar"></div>
+<div id="nav"></div>
+
+<div class="page-content">
+
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="inputBusqueda"
+           placeholder="Buscar producto, sitio, contacto..."
+           oninput="buscar(this.value)"
+           autocomplete="off" autofocus/>
+    <button class="search-clear" onclick="limpiar()" title="Limpiar">✕</button>
+  </div>
+
+  <div class="list-header">
+    <span id="countLabel">Escribe para buscar</span>
+  </div>
+
+  <div id="listaResultados">
+    <div class="empty-state">
+      <span class="empty-icon">🔍</span>
+      <p>Busca por nombre de producto, sitio o contacto.<br>
+         Ej: <strong>mel</strong> → melón, melocotón<br>
+         Ej: <strong>mercadona</strong> → todos los Mercadona</p>
+    </div>
+  </div>
+
+</div>
+
+<script src="shared.js"></script>
+<script>
+  document.getElementById('topbar').innerHTML = renderTopbar('🔍 Búsqueda');
+  document.getElementById('nav').innerHTML = renderNav('busqueda');
+
+  function buscar(termino) {
+    const t = termino.trim().toLowerCase();
+    const label = document.getElementById('countLabel');
+    const lista = document.getElementById('listaResultados');
+
+    if (!t) {
+      label.textContent = 'Escribe para buscar';
+      lista.innerHTML = `<div class="empty-state">
+        <span class="empty-icon">🔍</span>
+        <p>Busca por nombre de producto, sitio o contacto.<br>
+           Ej: <strong>mel</strong> → melón, melocotón<br>
+           Ej: <strong>mercadona</strong> → todos los Mercadona</p>
+      </div>`;
+      return;
+    }
+
+    const todos = getRegistros();
+    const encontrados = todos.filter(r =>
+      r.item.toLowerCase().includes(t) ||
+      r.sitio.toLowerCase().includes(t) ||
+      (r.contacto || '').toLowerCase().includes(t) ||
+      (r.obs || '').toLowerCase().includes(t)
+    );
+
+    label.textContent = encontrados.length === 0
+      ? `Sin resultados para "${termino}"`
+      : `${encontrados.length} resultado${encontrados.length !== 1 ? 's' : ''} para "${termino}"`;
+
+    if (!encontrados.length) {
+      lista.innerHTML = `<div class="empty-state">
+        <span class="empty-icon">😕</span>
+        <p>Sin resultados para "<strong>${termino}</strong>"<br>
+        Prueba con otro término</p>
+      </div>`;
+      return;
+    }
+
+    lista.innerHTML = encontrados.map(r => {
+      // Resaltar coincidencia en el item y sitio
+      const hl = str => str.replace(
+        new RegExp(`(${t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')})`, 'gi'),
+        '<mark style="background:#FFF8C5;border-radius:2px;padding:0 1px">$1</mark>'
+      );
+      return `<div class="reg-card">
+        <div class="reg-card-img">${r.emoji}</div>
+        <div class="reg-card-top">
+          <span class="reg-card-item">${hl(r.item)}</span>
+          <span class="reg-card-precio">${r.precio.toFixed(2)} €</span>
+        </div>
+        <div class="reg-card-bottom">
+          <div class="reg-card-meta">
+            ${hl(r.sitio)}
+            ${r.contacto ? '<br>' + hl(r.contacto) : ''}
+            <br>📍 ${r.lat.toFixed(4)}° · 🗓 ${formatFecha(r.fecha)}
+            ${r.obs ? '<br><em>' + hl(r.obs) + '</em>' : ''}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function limpiar() {
+    document.getElementById('inputBusqueda').value = '';
+    buscar('');
+    document.getElementById('inputBusqueda').focus();
+  }
+</script>
+</body>
+</html>

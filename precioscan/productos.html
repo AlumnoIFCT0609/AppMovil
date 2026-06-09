@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrecioScan — Productos</title>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<div id="topbar"></div>
+<div id="nav"></div>
+
+<div class="page-content">
+
+  <!-- Añadir nuevo -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-body">
+      <div class="card-title">Añadir producto al catálogo</div>
+      <div style="display:flex;gap:8px">
+        <div style="flex:1">
+          <input type="text" id="inputNuevo"
+                 placeholder="Nombre del producto..."
+                 maxlength="200"
+                 onkeydown="if(event.key==='Enter')agregarItem()"
+                 style="width:100%;padding:10px 12px;border:1.5px solid #E0E0E0;border-radius:9px;font-size:.88rem;font-family:inherit;outline:none"/>
+        </div>
+        <button class="btn btn-primary" style="width:auto;padding:10px 18px" onclick="agregarItem()">
+          ➕ Añadir
+        </button>
+      </div>
+      <div id="addError" class="info-box rojo" style="display:none;margin-top:10px;margin-bottom:0">
+        <span class="info-box-icon">⚠️</span>
+        <span id="addErrorMsg"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Info -->
+  <div class="info-box amarillo" style="margin-bottom:12px">
+    <span class="info-box-icon">ℹ️</span>
+    <span>Los productos añadidos aquí aparecen en el desplegable al registrar una foto. No se pueden eliminar si tienen registros asociados.</span>
+  </div>
+
+  <!-- Buscador dentro de lista -->
+  <div class="search-wrap" style="margin-bottom:10px">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="inputFiltro"
+           placeholder="Filtrar lista..."
+           oninput="filtrarLista(this.value)"/>
+    <button class="search-clear" onclick="limpiarFiltro()">✕</button>
+  </div>
+
+  <div class="list-header">
+    <span id="countLabel">Cargando...</span>
+  </div>
+
+  <div id="listaItems"></div>
+
+</div>
+
+<script src="shared.js"></script>
+<script>
+  document.getElementById('topbar').innerHTML = renderTopbar('🏷️ Productos');
+  document.getElementById('nav').innerHTML = renderNav('productos');
+
+  function renderLista(filtro = '') {
+    const items = getItems();
+    const t = filtro.toLowerCase();
+    const filtrados = t ? items.filter(i => i.toLowerCase().includes(t)) : items;
+    document.getElementById('countLabel').textContent =
+      `${filtrados.length} de ${items.length} producto${items.length !== 1 ? 's' : ''}`;
+
+    const lista = document.getElementById('listaItems');
+    if (!filtrados.length) {
+      lista.innerHTML = `<div class="empty-state">
+        <span class="empty-icon">🏷️</span>
+        <p>${t ? `Sin coincidencias para "<strong>${filtro}</strong>"` : 'No hay productos todavía'}</p>
+      </div>`;
+      return;
+    }
+    lista.innerHTML = filtrados.map(i => `
+      <div class="item-row">
+        <div class="item-dot"></div>
+        <span style="flex:1">${i}</span>
+        <span style="font-size:.72rem;color:#aaa">${usosItem(i)} uso${usosItem(i)!==1?'s':''}</span>
+      </div>`).join('');
+  }
+
+  function usosItem(nombre) {
+    return getRegistros().filter(r => r.item === nombre).length;
+  }
+
+  function agregarItem() {
+    const input = document.getElementById('inputNuevo');
+    const val = input.value.trim();
+    const errBox = document.getElementById('addError');
+    const errMsg = document.getElementById('addErrorMsg');
+    errBox.style.display = 'none';
+
+    if (!val) {
+      errMsg.textContent = 'Escribe el nombre del producto';
+      errBox.style.display = 'flex';
+      return;
+    }
+    const items = getItems();
+    if (items.some(i => i.toLowerCase() === val.toLowerCase())) {
+      errMsg.textContent = `"${val}" ya existe en el catálogo`;
+      errBox.style.display = 'flex';
+      return;
+    }
+    items.push(val);
+    items.sort((a, b) => a.localeCompare(b, 'es'));
+    setItems(items);
+    input.value = '';
+    document.getElementById('inputFiltro').value = '';
+    renderLista();
+    toast(`✅ "${val}" añadido al catálogo`);
+  }
+
+  function filtrarLista(v) { renderLista(v); }
+  function limpiarFiltro() {
+    document.getElementById('inputFiltro').value = '';
+    renderLista();
+  }
+
+  renderLista();
+</script>
+</body>
+</html>

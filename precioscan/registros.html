@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrecioScan — Registros</title>
+<link rel="stylesheet" href="shared.css">
+<style>
+  /* Modal edición */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 200;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px 40px;
+    width: 100%;
+    max-width: 480px;
+    max-height: 85vh;
+    overflow-y: auto;
+    animation: slideUp 0.25s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .modal-title {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+  .modal-close {
+    background: #f0f0f0;
+    border: none;
+    border-radius: 50%;
+    width: 32px; height: 32px;
+    font-size: 1rem;
+    cursor: pointer;
+  }
+
+  /* Confirm dialog */
+  .confirm-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .confirm-overlay.open { display: flex; }
+  .confirm-box {
+    background: #fff;
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 320px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  }
+  .confirm-box h3 { font-size: 1rem; margin-bottom: 8px; }
+  .confirm-box p { font-size: 0.85rem; color: #666; margin-bottom: 20px; }
+  .confirm-actions { display: flex; gap: 10px; }
+  .confirm-actions button { flex: 1; }
+</style>
+</head>
+<body>
+
+<div id="topbar"></div>
+<div id="nav"></div>
+
+<div class="page-content">
+  <div class="list-header">
+    <span id="countLabel">Cargando...</span>
+    <a href="foto.html" class="btn btn-sm btn-secondary" style="width:auto">➕ Nueva</a>
+  </div>
+  <div id="listaRegistros"></div>
+</div>
+
+<!-- Modal edición -->
+<div class="modal-overlay" id="modalOverlay" onclick="cerrarModal(event)">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">✏️ Editar registro</span>
+      <button class="modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+    <input type="hidden" id="editId"/>
+    <div class="campo">
+      <label>Producto</label>
+      <select id="editItem"></select>
+    </div>
+    <div class="campo">
+      <label>Precio (€)</label>
+      <input type="number" id="editPrecio" min="0" step="0.01"/>
+    </div>
+    <div class="campo">
+      <label>Sitio</label>
+      <input type="text" id="editSitio" maxlength="200"/>
+    </div>
+    <div class="campo">
+      <label>Contacto</label>
+      <input type="text" id="editContacto" maxlength="200"/>
+    </div>
+    <div class="campo">
+      <label>Observaciones</label>
+      <textarea id="editObs"></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="guardarEdicion()">💾 &nbsp;Guardar cambios</button>
+  </div>
+</div>
+
+<!-- Confirm borrar -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3>🗑️ Borrar registro</h3>
+    <p id="confirmMsg">¿Seguro que quieres borrar este registro y su foto?</p>
+    <div class="confirm-actions">
+      <button class="btn btn-secondary btn-sm" onclick="cerrarConfirm()">Cancelar</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmarBorrar()" style="background:#C62828;color:#fff;border:none">Borrar</button>
+    </div>
+  </div>
+</div>
+
+<script src="shared.js"></script>
+<script>
+  document.getElementById('topbar').innerHTML = renderTopbar('📋 Registros');
+  document.getElementById('nav').innerHTML = renderNav('registros');
+
+  let pendingDeleteId = null;
+
+  function renderLista() {
+    const regs = getRegistros();
+    const lista = document.getElementById('listaRegistros');
+    document.getElementById('countLabel').textContent = `${regs.length} registro${regs.length !== 1 ? 's' : ''} guardado${regs.length !== 1 ? 's' : ''}`;
+    if (!regs.length) {
+      lista.innerHTML = `<div class="empty-state">
+        <span class="empty-icon">📷</span>
+        <p>No hay registros todavía</p>
+        <p><a href="foto.html">Haz tu primera foto</a></p>
+      </div>`;
+      return;
+    }
+    lista.innerHTML = regs.map(r => renderRegCard(r)).join('');
+  }
+
+  function editarReg(id) {
+    const regs = getRegistros();
+    const r = regs.find(x => x.id === id);
+    if (!r) return;
+    document.getElementById('editId').value = id;
+    // Cargar items en select
+    const sel = document.getElementById('editItem');
+    sel.innerHTML = '';
+    getItems().forEach(i => {
+      const opt = document.createElement('option');
+      opt.value = i; opt.textContent = i;
+      if (i === r.item) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    document.getElementById('editPrecio').value = r.precio;
+    document.getElementById('editSitio').value = r.sitio;
+    document.getElementById('editContacto').value = r.contacto;
+    document.getElementById('editObs').value = r.obs;
+    document.getElementById('modalOverlay').classList.add('open');
+  }
+
+  function cerrarModal(e) {
+    if (!e || e.target === document.getElementById('modalOverlay'))
+      document.getElementById('modalOverlay').classList.remove('open');
+  }
+
+  function guardarEdicion() {
+    const id = parseInt(document.getElementById('editId').value);
+    const regs = getRegistros();
+    const idx = regs.findIndex(x => x.id === id);
+    if (idx === -1) return;
+    regs[idx].item     = document.getElementById('editItem').value;
+    regs[idx].precio   = parseFloat(document.getElementById('editPrecio').value) || 0;
+    regs[idx].sitio    = document.getElementById('editSitio').value;
+    regs[idx].contacto = document.getElementById('editContacto').value;
+    regs[idx].obs      = document.getElementById('editObs').value;
+    setRegistros(regs);
+    cerrarModal();
+    renderLista();
+    toast('✅ Cambios guardados');
+  }
+
+  function borrarReg(id) {
+    const regs = getRegistros();
+    const r = regs.find(x => x.id === id);
+    document.getElementById('confirmMsg').textContent =
+      `¿Borrar "${r?.item || 'este registro'}" y su foto?`;
+    pendingDeleteId = id;
+    document.getElementById('confirmOverlay').classList.add('open');
+  }
+
+  function cerrarConfirm() {
+    pendingDeleteId = null;
+    document.getElementById('confirmOverlay').classList.remove('open');
+  }
+
+  function confirmarBorrar() {
+    if (!pendingDeleteId) return;
+    const regs = getRegistros().filter(x => x.id !== pendingDeleteId);
+    setRegistros(regs);
+    cerrarConfirm();
+    renderLista();
+    toast('🗑️ Registro eliminado');
+  }
+
+  renderLista();
+</script>
+</body>
+</html>

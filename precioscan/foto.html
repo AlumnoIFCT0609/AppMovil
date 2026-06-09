@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PrecioScan — Nueva Foto</title>
+<link rel="stylesheet" href="shared.css">
+</head>
+<body>
+
+<div id="topbar"></div>
+<div id="nav"></div>
+
+<div class="page-content">
+
+  <!-- GPS -->
+  <div class="info-box verde" id="gpsBox">
+    <span class="info-box-icon">📍</span>
+    <span id="gpsTexto">Obteniendo ubicación GPS...</span>
+  </div>
+
+  <!-- Foto -->
+  <div class="foto-area" id="fotoArea" onclick="simularFoto()">
+    <span class="foto-icon">📷</span>
+    <span>Pulsa para hacer una foto</span>
+    <img id="fotoImg" src="" alt="" style="display:none"/>
+  </div>
+
+  <button class="btn btn-primary" id="btnFoto" onclick="simularFoto()" style="margin-bottom:14px">
+    📷 &nbsp;Hacer Foto
+  </button>
+
+  <div class="divider"></div>
+
+  <!-- Campos -->
+  <div class="card">
+    <div class="card-body">
+      <div class="card-title">Datos del producto</div>
+
+      <div class="campo">
+        <label>Producto <span class="req">*</span></label>
+        <select id="selectItem">
+          <option value="">Selecciona un producto...</option>
+        </select>
+      </div>
+
+      <div class="campo">
+        <label>Precio (€) <span class="req">*</span></label>
+        <input type="number" id="inputPrecio" placeholder="0,00" min="0" step="0.01"/>
+      </div>
+
+      <div class="campo">
+        <label>Sitio</label>
+        <input type="text" id="inputSitio" placeholder="Ej: Mercadona Nervión" maxlength="200"/>
+      </div>
+
+      <div class="campo">
+        <label>Contacto</label>
+        <input type="text" id="inputContacto" placeholder="Tel., web, referencia..." maxlength="200"/>
+      </div>
+
+      <div class="campo">
+        <label>Observaciones</label>
+        <textarea id="inputObs" placeholder="Notas adicionales..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- Campos automáticos (solo lectura) -->
+  <div class="card">
+    <div class="card-body">
+      <div class="card-title">Datos automáticos</div>
+      <div class="campo">
+        <label>GPS</label>
+        <input type="text" id="inputGps" readonly value="Obteniendo..."/>
+      </div>
+      <div class="campo">
+        <label>Fecha y hora</label>
+        <input type="text" id="inputFecha" readonly/>
+      </div>
+      <div class="campo">
+        <label>Dirección de foto</label>
+        <input type="text" id="inputRutaFoto" readonly value="Sin foto aún"/>
+        <div class="hint">Se genera automáticamente al hacer la foto</div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="guardarRegistro()" style="margin-top:4px">
+    💾 &nbsp;Guardar Registro
+  </button>
+
+</div>
+
+<script src="shared.js"></script>
+<script>
+  document.getElementById('topbar').innerHTML = renderTopbar('📷 Nueva Foto');
+  document.getElementById('nav').innerHTML = renderNav('foto');
+
+  // GPS simulado
+  const LAT = 37.3890 + (Math.random() - 0.5) * 0.01;
+  const LON = -5.9920 + (Math.random() - 0.5) * 0.01;
+  setTimeout(() => {
+    document.getElementById('gpsTexto').textContent = `${LAT.toFixed(5)}, ${LON.toFixed(5)} — GPS obtenido`;
+    document.getElementById('gpsBox').style.borderLeftColor = '#1B5E20';
+    document.getElementById('inputGps').value = `${LAT.toFixed(5)}, ${LON.toFixed(5)}`;
+  }, 1200);
+
+  // Fecha actual
+  const ahora = new Date();
+  document.getElementById('inputFecha').value =
+    ahora.toLocaleDateString('es-ES') + ' ' + ahora.toLocaleTimeString('es-ES', {hour:'2-digit', minute:'2-digit'});
+
+  // Cargar items
+  const items = getItems();
+  const sel = document.getElementById('selectItem');
+  items.forEach(i => {
+    const opt = document.createElement('option');
+    opt.value = i; opt.textContent = i;
+    sel.appendChild(opt);
+  });
+
+  let fotoTomada = false;
+  const FOTOS_DEMO = [
+    'https://placehold.co/480x180/E8F5E9/1B5E20?text=📷+Foto+registrada',
+  ];
+
+  function simularFoto() {
+    fotoTomada = true;
+    const area = document.getElementById('fotoArea');
+    const img = document.getElementById('fotoImg');
+    const btn = document.getElementById('btnFoto');
+    const nombreFoto = `foto_${ahora.getFullYear()}${String(ahora.getMonth()+1).padStart(2,'0')}${String(ahora.getDate()).padStart(2,'0')}_${String(ahora.getHours()).padStart(2,'0')}${String(ahora.getMinutes()).padStart(2,'0')}${String(ahora.getSeconds()).padStart(2,'0')}.jpg`;
+    img.src = FOTOS_DEMO[0];
+    img.style.display = 'block';
+    area.classList.add('tomada');
+    btn.textContent = '✅  Foto tomada — pulsa para repetir';
+    btn.style.background = '#455A64';
+    document.getElementById('inputRutaFoto').value = `/storage/emulated/0/PrecioScan/${nombreFoto}`;
+    toast('📷 Foto guardada · GPS registrado');
+  }
+
+  function guardarRegistro() {
+    if (!fotoTomada) { toast('⚠️ Primero haz una foto'); return; }
+    const item = document.getElementById('selectItem').value;
+    if (!item) { toast('⚠️ Selecciona un producto'); return; }
+    const precioVal = parseFloat(document.getElementById('inputPrecio').value);
+    if (!precioVal || precioVal <= 0) { toast('⚠️ Introduce un precio válido'); return; }
+
+    const emojis = {'Leche':'🥛','Arroz':'🍚','Aceite de oliva':'🫒','Refresco Cola':'🥤',
+      'Huevos (docena)':'🥚','Yogur':'🫙','Pollo (kg)':'🍗','Sandía':'🍉',
+      'Melón':'🍈','Melocotón':'🍑','Cereza':'🍒'};
+    const nuevoReg = {
+      id: nextId(),
+      emoji: emojis[item] || '📦',
+      item, precio: precioVal,
+      sitio: document.getElementById('inputSitio').value || '',
+      contacto: document.getElementById('inputContacto').value || '',
+      obs: document.getElementById('inputObs').value || '',
+      fecha: ahora.toISOString().split('T')[0],
+      lat: LAT, lon: LON,
+    };
+    const regs = getRegistros();
+    regs.unshift(nuevoReg);
+    setRegistros(regs);
+    toast('✅ Registro guardado correctamente');
+    setTimeout(() => window.location.href = 'registros.html', 900);
+  }
+</script>
+</body>
+</html>
